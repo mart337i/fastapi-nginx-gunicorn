@@ -3,6 +3,10 @@ import mariadb
 import sys
 
 class MariaDB:
+
+    #NOTE:: Better to set the information from a hidden .env file
+    dbname = 'facility'
+
     def __init__(self):
         self.setup()  # Automatically call setup when an instance is created
 
@@ -14,7 +18,7 @@ class MariaDB:
                 password="Vds79bzw-",
                 host="localhost",
                 port=3306,
-                database="facility"
+                database=self.dbname
             )
             print(f"connection : {conn}")
             return conn.cursor()
@@ -43,25 +47,54 @@ class MariaDB:
         """
         _cr = self.get_curser()
         print(_cr.connection)  # Fixed this line by printing _cr.connection instead of res.connection
+        res = self.execute(_cr,self.init_query())
+        print(res)
 
 
-    def innit_query ():
-        return """
-            USE facility; 
-            CREATE TABLE facility (
-                ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-                DESC CHAR,
+    def init_query (self):
+        return f"""
+            USE {self.dbname}; 
+            -- Facility table
+            CREATE TABLE Facility (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                beskrivelse CHAR
             );
-            CREATE TABLE building (
-                ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-            ) ;
-            CREATE TABLE pollution_sensor (
-                ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-            
+
+            -- Building table
+            CREATE TABLE Building (
+                id INT PRIMARY KEY,
+                name CHAR,
+                Facility_id INT,
+                FOREIGN KEY (Facility_id) REFERENCES Facility(id)
             );
-            CREATE TABLE temperature_humidity_sensor (
-                ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-            
+
+            -- Alarm table
+            CREATE TABLE Alarm (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                type ENUM('warning','failure'),
+                sonor_id INT
+                -- Add foreign key constraints if required
+            );
+
+            -- Pollution sensor table
+            CREATE TABLE PollutionSensor (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                name CHAR,
+                value DECIMAL,
+                datetime DATETIME,
+                building_id INT,
+                FOREIGN KEY (building_id) REFERENCES Building(id)
+            );
+
+            -- Temperature and humidity sensor table
+            CREATE TABLE TemperatureHumiditySensor (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                type ENUM('warning','failure','good','low'),
+                value DECIMAL,
+                name CHAR,
+                datetime DATETIME,
+                building_id INT,
+                FOREIGN KEY (building_id) REFERENCES Building(id)
             );
 
         """
