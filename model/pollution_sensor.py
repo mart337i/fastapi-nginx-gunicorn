@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 class PollutionSensor(BaseModel):
     id: int
-    name: chr
+    name: str
     value:float
     value_updated : datetime
     building_id : int

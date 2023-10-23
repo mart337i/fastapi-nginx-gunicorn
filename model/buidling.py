@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class Building(BaseModel):
     id: int
-    name: chr
+    name: str
     facility_id : int
 
     def insert_into_building(self,values):

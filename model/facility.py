@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class Facility(BaseModel):
     id: int
-    desc: chr
+    desc: str
 
     def insert_into_facility(self,value):
         return f"""
