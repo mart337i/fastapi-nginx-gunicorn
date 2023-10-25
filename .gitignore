@@ -1,6 +1,6 @@
 .venv/
 .DS_Store
 __pycache__/*
-database/__pycache__
+*/__pycache__
 logs/
 .env
