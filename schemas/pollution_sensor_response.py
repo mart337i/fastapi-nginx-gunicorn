@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-class AlarmResponse(BaseModel):
+class PollutionSensorResponse(BaseModel):
     id: int
-    type: str
+    name: str
 
     class Config:
         orm_mode = True
