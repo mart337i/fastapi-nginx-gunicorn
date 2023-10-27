@@ -3,4 +3,5 @@
 __pycache__/*
 */__pycache__
 logs/
-.env
+gunicorn_start
+config.py
