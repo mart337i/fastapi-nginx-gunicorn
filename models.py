@@ -41,4 +41,5 @@ class TempHumiditySensor(SQLModel, table=True):
 class Alarm(SQLModel, table=True):
     id: int = Field(primary_key=True, index=True)
     type: AlarmType
+    message : str = None
     sonor_id: int

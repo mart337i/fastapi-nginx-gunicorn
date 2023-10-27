@@ -48,9 +48,11 @@ def insert_sample_data(session: Session = Depends(get_session)):
     # Sample data for Alarm
     alarm1 = Alarm(type=AlarmType.warning, sonor_id=1)
     alarm2 = Alarm(type=AlarmType.good, sonor_id=2)
+    alarm3 = Alarm(type=AlarmType.failure,message="IO ERROR", sonor_id=2)
 
     session.add(alarm1)
     session.add(alarm2)
+    session.add(alarm3)
     session.commit()
 
     return {"message": "Sample data inserted successfully!"}

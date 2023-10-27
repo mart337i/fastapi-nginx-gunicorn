@@ -4,9 +4,12 @@ from models import Facility, Building, PollutionSensor, TempHumiditySensor, Alar
 from sample import router as sample_route
 from config import engine
 from sqlmodel import SQLModel
+from datetime import datetime, timedelta
+from sqlalchemy import text
 
 app = FastAPI()
-SQLModel.metadata.create_all(engine)
+
+SQLModel.metadata.create_all(bind=engine)
 
 app.include_router(sample_route, prefix="/sample", tags=["sample data"]) 
 
@@ -48,3 +51,31 @@ def create_alarm(alarm: Alarm, session: Session = Depends(get_session)):
     session.commit()
     session.refresh(alarm)
     return alarm
+
+
+@app.get("/facilities/")
+def read_facilities(session: Session = Depends(get_session)):
+    facilities = session.exec(select(Facility)).all()
+    return facilities
+
+@app.get("/buildings/")
+def read_buildings(session: Session = Depends(get_session)):
+    buildings = session.exec(select(Building)).all()
+    return buildings
+
+@app.get("/pollution-sensors/")
+def read_pollution_sensors(minutes: int = 10, session: Session = Depends(get_session)):
+    time_ago = datetime.utcnow() - timedelta(minutes=minutes)
+    sensors = session.exec(select(PollutionSensor).where(PollutionSensor.datetime > time_ago)).all()
+    return sensors
+
+@app.get("/temp-humidity-sensors/")
+def read_temp_humidity_sensors(minutes: int = 10, session: Session = Depends(get_session)):
+    time_ago = datetime.utcnow() - timedelta(minutes=minutes)
+    sensors = session.exec(select(TempHumiditySensor).where(TempHumiditySensor.datetime > time_ago)).all()
+    return sensors
+
+@app.get("/alarms/")
+def read_alarms(session: Session = Depends(get_session)):
+    alarms = session.exec(select(Alarm)).all()
+    return alarms
