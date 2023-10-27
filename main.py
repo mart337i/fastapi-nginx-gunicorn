@@ -14,7 +14,9 @@ app = FastAPI()
 register_tortoise(
     app,
     db_url="mysql://pi:Vds79bzw-@localhost:3306/facility",  # Use 'mysql' scheme
-    modules={"models": ["models.facility",'models.alarm','models.building','models.pollution_sensor','models.temperature_humidity_sensor']},
+    modules={"models": 
+             ["models.facility",'models.alarm','models.building','models.pollution_sensor','models.temperature_humidity_sensor',]
+             },
     generate_schemas=True,
 )
 # Include the Facility routes

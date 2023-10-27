@@ -9,7 +9,7 @@ class AlarmType(str, Enum):
     low = "low"
 
 
-class Alarm(Model):
+class SensorAlarm(Model):
     id = fields.IntField(pk=True)
     type = fields.CharField(max_length=20, choices=[(e.value, e.value) for e in AlarmType])
     sonor_id = fields.IntField()
