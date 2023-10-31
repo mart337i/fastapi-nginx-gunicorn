@@ -1,21 +1,55 @@
 from fastapi import FastAPI, HTTPException, Depends
-from sqlmodel import Session, create_engine, select
-from models import Facility, Building, PollutionSensor, TempHumiditySensor, Alarm
-from sample import router as sample_route
+from sqlmodel import Session, create_engine, select,SQLModel
+from models import Facility, Building, Sensor, Sensor_value,Alarm 
 from config import engine
-from sqlmodel import SQLModel
-from datetime import datetime, timedelta
-from sqlalchemy import text
+from sample import router as sample_route
+from datetime import datetime,timedelta
+
+from init import router as startup_route
 
 app = FastAPI()
+SQLModel.metadata.create_all(engine)
 
-SQLModel.metadata.create_all(bind=engine)
+#app.include_router(sample_route, prefix="/sample", tags=["sample data"]) 
+app.include_router(startup_route, prefix="/setup", tags=["setup service"]) 
 
-app.include_router(sample_route, prefix="/sample", tags=["sample data"]) 
+#Defaults for sensor setup.
+TARGET_BUILDING = 1
+TARGET_FACILITY = 1
+TARGET_NAME = "DT22"
 
 def get_session():
+    """
+        get the database session located in the file config.
+        i created the connection in a diffrent file to make sure it could be used by multible models.
+        this also avoids import errors
+    """
     with Session(engine) as session:
         yield session
+
+@app.post("/change_taget_building/")
+def Change_taget_buidling(builing_id : int):
+    TARGET_BUILDING = Building
+@app.post("/change_taget_facility/")
+def change_taget_facility(facility_id : int):
+    TARGET_FACILITY = Facility
+
+@app.post("/change_taget_name/")
+def change_taget_facility(sensor_name : str):
+    TARGET_NAME = sensor_name
+
+@app.get("/get_taget_building/")
+def get_taget_buidling():
+    return TARGET_BUILDING
+
+@app.get("/get_taget_facility/")
+def get_taget_facility():
+    return TARGET_FACILITY
+
+@app.get("/get_taget_name/")
+def get_taget_facility():
+    return TARGET_NAME
+
 
 @app.post("/facility/", response_model=Facility)
 def create_facility(facility: Facility, session: Session = Depends(get_session)):
@@ -31,19 +65,19 @@ def create_building(building: Building, session: Session = Depends(get_session))
     session.refresh(building)
     return building
 
-@app.post("/pollution_sensor/", response_model=PollutionSensor)
-def create_pollution_sensor(sensor: PollutionSensor, session: Session = Depends(get_session)):
+@app.post("/sonsor/", response_model=Sensor)
+def create_sensor(sensor: Sensor, session: Session = Depends(get_session)):
+    sensor = Sensor(name=sensor.name, building_id=sensor.building_id)
     session.add(sensor)
     session.commit()
-    session.refresh(sensor)
     return sensor
 
-@app.post("/temp_humidity_sensor/", response_model=TempHumiditySensor)
-def create_temp_humidity_sensor(sensor: TempHumiditySensor, session: Session = Depends(get_session)):
-    session.add(sensor)
+@app.post("/sensor_value/", response_model=Sensor_value)
+def sensor_value(sensor_value: Sensor_value, session: Session = Depends(get_session)):
+    session.add(sensor_value)
     session.commit()
-    session.refresh(sensor)
-    return sensor
+    session.refresh(sensor_value)
+    return sensor_value
 
 @app.post("/alarm/", response_model=Alarm)
 def create_alarm(alarm: Alarm, session: Session = Depends(get_session)):
@@ -52,30 +86,27 @@ def create_alarm(alarm: Alarm, session: Session = Depends(get_session)):
     session.refresh(alarm)
     return alarm
 
+@app.get("/get-sample-data/")
+def get_sample_data(session: Session = Depends(get_session)):
+    data = {
+        "facilities": session.query(Facility).all(),
+        "buildings": session.query(Building).all(),
+        "sensor": session.query(Sensor).all(),
+        "sensor_value": session.query(Sensor_value).all(),
+        "alarms": session.query(Alarm).all()
+    }
 
-@app.get("/facilities/")
-def read_facilities(session: Session = Depends(get_session)):
-    facilities = session.exec(select(Facility)).all()
-    return facilities
+    return data
 
-@app.get("/buildings/")
-def read_buildings(session: Session = Depends(get_session)):
-    buildings = session.exec(select(Building)).all()
-    return buildings
+@app.get("/dashboard/")
+def get_dashboard(session: Session = Depends(get_session)):
+    # Get the last 10 sensor values based on datetime
+    sensors_vals = session.query(Sensor_value).order_by(Sensor_value.datetime.desc()).limit(10).all()
 
-@app.get("/pollution-sensors/")
-def read_pollution_sensors(minutes: int = 10, session: Session = Depends(get_session)):
-    time_ago = datetime.utcnow() - timedelta(minutes=minutes)
-    sensors = session.exec(select(PollutionSensor).where(PollutionSensor.datetime > time_ago)).all()
-    return sensors
+    if not sensors_vals:
+        raise HTTPException(status_code=404, detail="No sensor records found")
+    
+    # Fetch all alarms
+    alarms = session.query(Alarm).all()
 
-@app.get("/temp-humidity-sensors/")
-def read_temp_humidity_sensors(minutes: int = 10, session: Session = Depends(get_session)):
-    time_ago = datetime.utcnow() - timedelta(minutes=minutes)
-    sensors = session.exec(select(TempHumiditySensor).where(TempHumiditySensor.datetime > time_ago)).all()
-    return sensors
-
-@app.get("/alarms/")
-def read_alarms(session: Session = Depends(get_session)):
-    alarms = session.exec(select(Alarm)).all()
-    return alarms
+    return {"sensors": sensors_vals, "alarms": alarms}
