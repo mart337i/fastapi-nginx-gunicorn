@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlmodel import Session, create_engine, select,SQLModel
 from models import Facility, Building, Sensor, Sensor_value,Alarm 
 from config import engine
-from sample import router as sample_route
+#from sample import router as sample_route
 from datetime import datetime,timedelta
 
 from init import router as startup_route
@@ -47,7 +47,7 @@ def get_taget_facility():
     return TARGET_FACILITY
 
 @app.get("/get_taget_name/")
-def get_taget_facility():
+def get_taget_name():
     return TARGET_NAME
 
 
@@ -65,7 +65,7 @@ def create_building(building: Building, session: Session = Depends(get_session))
     session.refresh(building)
     return building
 
-@app.post("/sonsor/", response_model=Sensor)
+@app.post("/create_sensor/", response_model=Sensor)
 def create_sensor(sensor: Sensor, session: Session = Depends(get_session)):
     sensor = Sensor(name=sensor.name, building_id=sensor.building_id)
     session.add(sensor)
@@ -101,10 +101,10 @@ def get_sample_data(session: Session = Depends(get_session)):
 @app.get("/dashboard/")
 def get_dashboard(session: Session = Depends(get_session)):
     # Get the last 10 sensor values based on datetime
-    sensors_vals = session.query(Sensor_value).order_by(Sensor_value.datetime.desc()).limit(10).all()
+    sensors_vals = session.query(Sensor_value).order_by(Sensor_value.value_datetime.desc()).limit(10).all()
 
     if not sensors_vals:
-        raise HTTPException(status_code=404, detail="No sensor records found")
+        raise HTTPException(status_code=204, detail="No sensor records found")
     
     # Fetch all alarms
     alarms = session.query(Alarm).all()

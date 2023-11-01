@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
-from models import Facility, Building, PollutionSensor, TempHumiditySensor, Alarm, SensorType, AlarmType
+from models import Facility, Building, Sensor, Sensor_value,Alarm , AlarmType, SensorType
 from config import engine
 
 router = APIRouter()

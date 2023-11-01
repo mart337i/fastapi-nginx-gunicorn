@@ -1,6 +1,7 @@
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
+from datetime import datetime
     
 class SensorType(str, Enum):
     temperature = "temperature"
@@ -34,11 +35,11 @@ class Sensor(SQLModel, table=True):
 
 class Sensor_value(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, index=True)
-    type: SensorType
+    sensorType: SensorType
     max_value : int 
     low_value : int
     value: float
-    datetime: str
+    value_datetime: datetime
     sensor_id: int = Field(foreign_key="sensor.id")
     sensor_value: Sensor = Relationship(back_populates="sensor_value")
 
