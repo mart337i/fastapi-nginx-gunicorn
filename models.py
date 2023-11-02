@@ -42,7 +42,7 @@ class Sensor_value(SQLModel, table=True):
     max_value_humid : Optional[int] = 100
     low_value_humid : Optional[int] = 0
     value: float
-    value_datetime: datetime
+    value_datetime: Optional[datetime] = datetime.utcnow().isoformat()
     sensor_id: int = Field(foreign_key="sensor.id")
     sensor_value: Sensor = Relationship(back_populates="sensor_value")
 

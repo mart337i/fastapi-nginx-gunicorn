@@ -4,7 +4,6 @@ from sqlmodel import Session, create_engine, select,SQLModel
 from models import Facility, Building, Sensor, Sensor_value,Alarm ,SensorType ,AlarmType
 from config import engine
 from typing import List
-#from sample import router as sample_route
 from datetime import datetime,timedelta
 
 from init import router as startup_route
@@ -155,9 +154,8 @@ def get_temp_data(sensor_id: int, session: Session = Depends(get_session)):
     )
 
     if alarm_triggered:
-        alarm_type = AlarmType.warning
         alarm_msg = f"Sensor {sensor.serial_number} returned {latest_sensor_data.value}:typeof({latest_sensor_data.sensorType} at {latest_sensor_data.value_datetime})"
-        alarm = Alarm(type=alarm_type, msg=alarm_msg, sonor_id=sensor.id)
+        alarm = Alarm(type=AlarmType.warning, msg=alarm_msg, sonor_id=sensor.id)
         session.add(alarm)
         session.commit()
 
