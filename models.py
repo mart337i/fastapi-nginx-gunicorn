@@ -27,6 +27,7 @@ class Building(SQLModel, table=True):
 
 class Sensor(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, index=True)
+    serial_number: Optional[str] = Field(unique=True, index=True)
     name: str
     building_id: int = Field(foreign_key="building.id")
     sensor_value: list["Sensor_value"] = Relationship()
@@ -36,8 +37,10 @@ class Sensor(SQLModel, table=True):
 class Sensor_value(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, index=True)
     sensorType: SensorType
-    max_value : int 
-    low_value : int
+    max_value_temp : Optional[int] = 100
+    low_value_temp : Optional[int] = 0
+    max_value_humid : Optional[int] = 100
+    low_value_humid : Optional[int] = 0
     value: float
     value_datetime: datetime
     sensor_id: int = Field(foreign_key="sensor.id")
@@ -48,6 +51,6 @@ class Alarm(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, index=True)
     type: AlarmType
     msg : str = None
-    sonor_id: int = Field(foreign_key="sensor.id")
+    serial_number: str = Field(foreign_key="sensor.serial_number")
     sensor: Sensor = Relationship(back_populates="alarm")
 
