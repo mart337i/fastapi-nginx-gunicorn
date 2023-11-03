@@ -44,7 +44,7 @@ def get_session():
 #---------------Root------------------------------------------#
 
 @app.get("/", response_class=HTMLResponse)
-def get_target_building():
+def root():
     return """
             <!DOCTYPE html>
             <html>
@@ -213,7 +213,7 @@ def get_temp_data(sensor_id: int, session: Session = Depends(get_session)):
         "alarm_triggered": alarm_triggered
     }
 
-@app.get("/get_temp_data/{sensor_id}", response_model=dict)
+@app.get("/get_humid_data/{sensor_id}", response_model=dict)
 def get_humid_data(sensor_id: int, session: Session = Depends(get_session)):
     # Check if the sensor exists
     sensor = session.get(Sensor, sensor_id)
@@ -259,6 +259,39 @@ def get_humid_data(sensor_id: int, session: Session = Depends(get_session)):
         "value_datetime": latest_sensor_data.value_datetime.isoformat(),
         "alarm_triggered": alarm_triggered
     }
+
+
+@app.put("/threshold-settings/", response_model=ThresholdSettings)
+def update_threshold_settings(
+    sensor_type: SensorType, max_value: int, low_value: int, session: Session = Depends(get_session)
+):
+    # Select the first ThresholdSettings record that matches the sensor_type
+    existing_settings = session.exec(
+        select(ThresholdSettings).where(ThresholdSettings.sensor_type == sensor_type)
+    ).first()
+
+    if not existing_settings:
+        # If no record is found, return a message instead of raising an exception
+        return {"message": "ThresholdSettings not found for the specified sensor type"}
+
+    # Update the existing ThresholdSettings with the new values
+    existing_settings.max_value = max_value
+    existing_settings.low_value = low_value
+    
+    session.add(existing_settings)
+    session.commit()
+    session.refresh(existing_settings)
+    
+    return existing_settings
+
+@app.get("/threshold-settings/", response_model=ThresholdSettings)
+def get_threshold_settings(session: Session = Depends(get_session)):
+    # Select the first ThresholdSettings record
+    settings = session.exec(select(ThresholdSettings)).first()
+    if not settings:
+        raise HTTPException(status_code=404, detail="ThresholdSettings not found")
+    
+    return settings
 
 @app.get("/get_all_sensor_serial_numbers", response_model=List[Sensor])
 def get_all_sensor_serial_numbers(session: Session = Depends(get_session)):
