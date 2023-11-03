@@ -12,6 +12,12 @@ class AlarmType(str, Enum):
     failure = "failure"
     good = "good"
 
+class ThresholdSettings(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    sensor_type: SensorType  
+    max_value: int
+    low_value: int
+
 class Facility(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, index=True)
     beskrivelse: str = Field()
@@ -37,10 +43,6 @@ class Sensor(SQLModel, table=True):
 class Sensor_value(SQLModel, table=True):
     id: Optional[int] = Field(primary_key=True, index=True)
     sensorType: SensorType
-    max_value_temp : Optional[int] = 100
-    low_value_temp : Optional[int] = 0
-    max_value_humid : Optional[int] = 100
-    low_value_humid : Optional[int] = 0
     value: float
     value_datetime: Optional[datetime] = datetime.utcnow().isoformat()
     sensor_id: int = Field(foreign_key="sensor.id")
