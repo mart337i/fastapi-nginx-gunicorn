@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, create_engine, select,SQLModel
 from models import Facility, Building, Sensor, Sensor_value,Alarm ,SensorType ,AlarmType,ThresholdSettings
@@ -11,7 +12,7 @@ from init import router as startup_route
 from test_endpoints import router as test_route
 
 
-logging.basicConfig(filename='/home/pi/code/fastapi-nginx-gunicorn/logs/application.log',  # log to a file named 'app.log'
+logging.basicConfig(filename='/home/sysadmin/code/fastapi-nginx-gunicorn/logs/application.log',  # log to a file named 'app.log'
                     filemode='a',  # append to the log file if it exists, otherwise create it
                     level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -40,6 +41,39 @@ def get_session():
     with Session(engine) as session:
         yield session
 
+#---------------Root------------------------------------------#
+
+@app.get("/", response_class=HTMLResponse)
+def get_target_building():
+    return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Greenhouse API</title>
+                <!-- Include Bootstrap CSS from CDN -->
+                <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+            </head>
+            <body class="bg-light">
+                <div class="container py-5">
+                    <h1 class="display-4 text-center mb-3">Welcome to the Greenhouse Temperature and Humidity API</h1>
+                    <p class="lead text-center mb-5">Use the links below to navigate to the API documentation:</p>
+                    <div class="row">
+                        <div class="col-md-6 text-center mb-3">
+                            <a href="/docs" class="btn btn-primary btn-lg">Swagger UI Documentation</a>
+                        </div>
+                        <div class="col-md-6 text-center mb-3">
+                            <a href="/redoc" class="btn btn-secondary btn-lg">ReDoc Documentation</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+                <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+                <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+            </body>
+            </html>
+
+    """
 
 #----------------Create new sensor----------------------------#
 @app.post("/change_taget_building/")
