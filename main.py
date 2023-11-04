@@ -155,15 +155,26 @@ def get_sensor_by_serial(serial_number: str, db: Session = Depends(get_session))
 
 @app.get("/dashboard/")
 def get_dashboard(session: Session = Depends(get_session)):
-    sensors_vals = session.query(Sensor_value).order_by(Sensor_value.value_datetime.desc()).limit(10).all()
+    # Join Sensor and Sensor_value to get both models
+    sensors_vals = (
+        session.exec(
+            select(Sensor, Sensor_value)
+            .join(Sensor_value)
+            .order_by(Sensor_value.value_datetime.desc())
+            .limit(10)
+        )
+        .all()
+    )
 
     if not sensors_vals:
         raise HTTPException(status_code=204, detail="No sensor records found")
     
-    # Fetch all alarms
     alarms = session.query(Alarm).all()
+    alarms = [alarm for alarm in alarms]
+    
+    _logger.warning(f"sensors : {sensors_vals}")
 
-    return {"sensors": sensors_vals, "alarms": alarms}
+    return {"sensor_values": sensors_vals, "alarms": alarms}
 
 
 @app.get("/get_temp_data/{sensor_id}", response_model=dict)
@@ -270,6 +281,8 @@ def update_threshold_settings(
         select(ThresholdSettings).where(ThresholdSettings.sensor_type == sensor_type)
     ).first()
 
+    _logger.warning(f"existing_settings : {existing_settings}")
+
     if not existing_settings:
         # If no record is found, return a message instead of raising an exception
         return {"message": "ThresholdSettings not found for the specified sensor type"}
@@ -284,10 +297,11 @@ def update_threshold_settings(
     
     return existing_settings
 
-@app.get("/threshold-settings/", response_model=ThresholdSettings)
+@app.get("/threshold-settings/", response_model=list)
 def get_threshold_settings(session: Session = Depends(get_session)):
     # Select the first ThresholdSettings record
-    settings = session.exec(select(ThresholdSettings)).first()
+    settings = session.exec(select(ThresholdSettings)).all()
+    _logger.warning(f"settings : {settings}")
     if not settings:
         raise HTTPException(status_code=404, detail="ThresholdSettings not found")
     
