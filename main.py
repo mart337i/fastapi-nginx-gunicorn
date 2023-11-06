@@ -12,7 +12,7 @@ from init import router as startup_route
 from test_endpoints import router as test_route
 
 
-logging.basicConfig(filename='/home/sysadmin/code/fastapi-nginx-gunicorn/logs/application.log',  # log to a file named 'app.log'
+logging.basicConfig(filename='/home/pi/code/fastapi-nginx-gunicorn/logs/application.log',  # log to a file named 'app.log'
                     filemode='a',  # append to the log file if it exists, otherwise create it
                     level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -21,7 +21,7 @@ logging.basicConfig(filename='/home/sysadmin/code/fastapi-nginx-gunicorn/logs/ap
 _logger = logging.getLogger(__name__)
 
 
-app = FastAPI()
+app = FastAPI(root_path="/api",docs_url="/docs", redoc_url="/redoc")
 SQLModel.metadata.create_all(engine)
 
 app.include_router(startup_route, prefix="/setup", tags=["setup service"]) 
@@ -59,10 +59,10 @@ def root():
                     <p class="lead text-center mb-5">Use the links below to navigate to the API documentation:</p>
                     <div class="row">
                         <div class="col-md-6 text-center mb-3">
-                            <a href="/docs" class="btn btn-primary btn-lg">Swagger UI Documentation</a>
+                            <a href="/api/docs" class="btn btn-primary btn-lg">Swagger UI Documentation</a>
                         </div>
                         <div class="col-md-6 text-center mb-3">
-                            <a href="/redoc" class="btn btn-secondary btn-lg">ReDoc Documentation</a>
+                            <a href="/api/redoc" class="btn btn-secondary btn-lg">ReDoc Documentation</a>
                         </div>
                     </div>
                 </div>
