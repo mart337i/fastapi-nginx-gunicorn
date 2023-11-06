@@ -5,7 +5,7 @@ from sqlmodel import Session, create_engine, select,SQLModel
 from models import Facility, Building, Sensor, Sensor_value,Alarm ,SensorType ,AlarmType,ThresholdSettings
 from config import engine
 from typing import List
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta, time
 import logging
 
 from init import router as startup_route
@@ -31,6 +31,12 @@ app.include_router(test_route, prefix="/test", tags=["test service"])
 TARGET_BUILDING = 1
 TARGET_FACILITY = 1
 TARGET_NAME = "DT22"
+
+#Working hours
+MORNING = datetime.combine(datetime.now().date(), time(8, 0))
+EVENING = datetime.combine(datetime.now().date(), time(18, 0))
+
+
 
 def get_session():
     """
@@ -78,13 +84,16 @@ def root():
 #----------------Create new sensor----------------------------#
 @app.post("/change_taget_building/")
 def Change_taget_buidling(builing_id : int):
+    global TARGET_BUILDING
     TARGET_BUILDING = Building
 @app.post("/change_taget_facility/")
 def change_taget_facility(facility_id : int):
+    global TARGET_FACILITY
     TARGET_FACILITY = Facility
 
 @app.post("/change_taget_name/")
 def change_taget_facility(sensor_name : str):
+    global TARGET_NAME
     TARGET_NAME = sensor_name
 
 @app.get("/get_taget_building/")
@@ -319,3 +328,20 @@ def get_all_sensor_serial_numbers(session: Session = Depends(get_session)):
     )
 
     return sensors
+
+@app.get("/control_lights", response_model=bool)
+def control_lights():
+    now = datetime.now()
+    is_between = MORNING <= now <= EVENING  # Compare datetime with datetime
+
+    return is_between
+
+@app.post("/update_times/")
+def update_times(morning_hour: int, morning_minute: int, evening_hour: int, evening_minute: int):
+    global MORNING, EVENING
+
+        # Update MORNING and EVENING with new times
+    MORNING = datetime.combine(datetime.now().date(), time(morning_hour, morning_minute))
+    EVENING = datetime.combine(datetime.now().date(), time(evening_hour, evening_minute))
+
+    return {"message": "Times updated successfully"}
