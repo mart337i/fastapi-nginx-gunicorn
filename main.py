@@ -11,23 +11,28 @@ import logging
 from init import router as startup_route
 from test_endpoints import router as test_route
 
-
+#Add the base logging config 
 logging.basicConfig(filename='/home/pi/code/fastapi-nginx-gunicorn/logs/application.log',  # log to a file named 'app.log'
                     filemode='a',  # append to the log file if it exists, otherwise create it
                     level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
+#get the logger with the newly set config
 _logger = logging.getLogger(__name__)
 
-
+#Application 
 app = FastAPI(root_path="/api",docs_url="/docs", redoc_url="/redoc")
+
+#Database Orm create engine
 SQLModel.metadata.create_all(engine)
 
+#set the external routes 
 app.include_router(startup_route, prefix="/setup", tags=["setup service"]) 
 app.include_router(test_route, prefix="/test", tags=["test service"]) 
 
 #Defaults for sensor setup.
+#When new devicses are connected the following values are used to create the loaction of a new sensor
 TARGET_BUILDING = 1
 TARGET_FACILITY = 1
 TARGET_NAME = "DT22"
@@ -49,6 +54,9 @@ def get_session():
 
 @app.get("/", response_class=HTMLResponse)
 def root():
+    """
+    Root get will return a basic website to serve the auto generated docs
+    """
     return """
             <!DOCTYPE html>
             <html>
@@ -110,6 +118,9 @@ def get_taget_name():
 
 @app.post("/working_hours/", response_model=WorkingHours)
 def create_working_hours(morning_hour: int, morning_minute: int, evening_hour: int, evening_minute: int, session: Session = Depends(get_session)):
+    """
+        Creates working_hours config
+    """
     working_hours = WorkingHours(
         morning = time(morning_hour,morning_minute),
         evening = time(evening_hour,evening_minute),
@@ -123,12 +134,20 @@ def create_working_hours(morning_hour: int, morning_minute: int, evening_hour: i
 
 @app.get("/working_hours_all/", response_model=List)
 def get_all_working_configs(session: Session = Depends(get_session)):
+    """
+        Gets all record created for WorkingHours
+    """
     working_hours = session.exec(select(WorkingHours)).all()
     return working_hours
 
 
 @app.get("/working_hours/", response_model=dict)
 def get_working_hours(session: Session = Depends(get_session)):
+    """
+        Resives the last created working hour config/record 
+        and return an anonymys type / json response (complex type)
+
+    """
     working_hours = (
     session.query(WorkingHours)
     .order_by(WorkingHours.created_date.desc())
@@ -148,6 +167,9 @@ def get_working_hours(session: Session = Depends(get_session)):
 
 @app.get("/control_lights", response_model=bool)
 def control_lights(session: Session = Depends(get_session)):
+    """
+        Does the same as get_working_hours() but returns a simple type : boolean 
+    """
     working_hours = (
     session.query(WorkingHours)
     .order_by(WorkingHours.created_date.desc())
@@ -160,7 +182,10 @@ def control_lights(session: Session = Depends(get_session)):
     return datetime.combine(datetime.now().date(), working_hours.morning)  <= now <= datetime.combine(datetime.now().date(),  working_hours.evening)  
 
 @app.post("/set_working_hours/", response_model=WorkingHours)
-def create_facility(working_hours: WorkingHours, session: Session = Depends(get_session)):
+def create_working_hours(working_hours: WorkingHours, session: Session = Depends(get_session)):
+    """
+        Creates a new record for working_hours
+    """
     session.add(working_hours)
     session.commit()
     session.refresh(working_hours)
@@ -169,6 +194,9 @@ def create_facility(working_hours: WorkingHours, session: Session = Depends(get_
 
 @app.post("/facility/", response_model=Facility)
 def create_facility(facility: Facility, session: Session = Depends(get_session)):
+    """
+        Creates a new record for facility
+    """
     session.add(facility)
     session.commit()
     session.refresh(facility)
@@ -176,6 +204,9 @@ def create_facility(facility: Facility, session: Session = Depends(get_session))
 
 @app.post("/building/", response_model=Building)
 def create_building(building: Building, session: Session = Depends(get_session)):
+    """
+        Creates a new record for building
+    """
     session.add(building)
     session.commit()
     session.refresh(building)
@@ -183,6 +214,10 @@ def create_building(building: Building, session: Session = Depends(get_session))
 
 @app.post("/create_sensor/", response_model=Sensor)
 def create_sensor(sensor: Sensor, session: Session = Depends(get_session)):
+    """
+        Creates a new record for sensor if one does not already exist 
+        
+    """
     # Check if a sensor with the same serial_number already exists
     db_sensor = session.exec(select(Sensor).where(Sensor.serial_number == sensor.serial_number)).first()
     if db_sensor is not None:
@@ -199,6 +234,9 @@ def create_sensor(sensor: Sensor, session: Session = Depends(get_session)):
 
 @app.post("/sensor_value/", response_model=Sensor_value)
 def sensor_value(sensor_value: Sensor_value, session: Session = Depends(get_session)):
+    """
+        Creates a new sensor_value record 
+    """
     session.add(sensor_value)
     session.commit()
     session.refresh(sensor_value)
@@ -206,6 +244,9 @@ def sensor_value(sensor_value: Sensor_value, session: Session = Depends(get_sess
 
 @app.post("/alarm/", response_model=Alarm)
 def create_alarm(alarm: Alarm, session: Session = Depends(get_session)):
+    """
+        Creates a new create_alarm record 
+    """
     session.add(alarm)
     session.commit()
     session.refresh(alarm)
@@ -213,6 +254,9 @@ def create_alarm(alarm: Alarm, session: Session = Depends(get_session)):
 
 @app.get("/get_sensor_by_serial/{serial_number}", response_model=Sensor)
 def get_sensor_by_serial(serial_number: str, db: Session = Depends(get_session)):
+    """
+        Gets the sensor by the serial number and return the obj
+    """
     sensor = db.exec(select(Sensor).where(Sensor.serial_number == serial_number)).one_or_none()
     if not sensor:
         raise HTTPException(status_code=404, detail=f"Sensor with serial number {serial_number} not found")
@@ -220,6 +264,9 @@ def get_sensor_by_serial(serial_number: str, db: Session = Depends(get_session))
 
 @app.get("/dashboard/")
 def get_dashboard(session: Session = Depends(get_session)):
+    """
+        Finds the last 10 values and retuns the obj's to the dashboard 
+    """
     # Join Sensor and Sensor_value to get both models
     sensors_vals = (
         session.exec(
@@ -244,6 +291,11 @@ def get_dashboard(session: Session = Depends(get_session)):
 
 @app.get("/get_temp_data/{sensor_id}", response_model=dict)
 def get_temp_data(sensor_id: int, session: Session = Depends(get_session)):
+    """
+        Gets the temp and creates an alarm if the temp is out of the hresholds 
+
+        this is called by the client if the client is to set an alarm 
+    """
     # Check if the sensor exists
     sensor = session.get(Sensor, sensor_id)
     if not sensor:
@@ -291,6 +343,11 @@ def get_temp_data(sensor_id: int, session: Session = Depends(get_session)):
 
 @app.get("/get_humid_data/{sensor_id}", response_model=dict)
 def get_humid_data(sensor_id: int, session: Session = Depends(get_session)):
+    """
+        Gets the himid and creates an alarm if the temp is out of the hresholds 
+
+        this is called by the client if the client is to set an alarm 
+    """
     # Check if the sensor exists
     sensor = session.get(Sensor, sensor_id)
     if not sensor:
@@ -341,6 +398,12 @@ def get_humid_data(sensor_id: int, session: Session = Depends(get_session)):
 def update_threshold_settings(
     sensor_type: SensorType, max_value: int, low_value: int, session: Session = Depends(get_session)
 ):
+    """
+        only 1 instans of ThresholdSettings exist and can be changed
+        
+        NOTE if i had to do it again i would do the same i did for working hours 
+        and create a new one to keep more record and there for history of changes 
+    """
     # Select the first ThresholdSettings record that matches the sensor_type
     existing_settings = session.exec(
         select(ThresholdSettings).where(ThresholdSettings.sensor_type == sensor_type)
@@ -364,6 +427,9 @@ def update_threshold_settings(
 
 @app.get("/threshold-settings/", response_model=list)
 def get_threshold_settings(session: Session = Depends(get_session)):
+    """
+        Gets all settings, but again only 1 exists 
+    """
     # Select the first ThresholdSettings record
     settings = session.exec(select(ThresholdSettings)).all()
     _logger.warning(f"settings : {settings}")
@@ -374,6 +440,9 @@ def get_threshold_settings(session: Session = Depends(get_session)):
 
 @app.get("/get_all_sensor_serial_numbers", response_model=List[Sensor])
 def get_all_sensor_serial_numbers(session: Session = Depends(get_session)):
+    """
+        Gets all sensors and thier sensor serial numbers
+    """
     # Query all sensor serial numbers
     serial_numbers = session.exec(select(Sensor.serial_number)).all()
 

@@ -8,11 +8,17 @@ router = APIRouter()
 
 # Dependency to get the database session
 def get_session():
+    """
+        Get the db session / db curser
+    """
     with Session(engine) as session:
         yield session
 
 @router.post("/set_up/")
 def init_setup(facility: Facility, building: Building, session: Session = Depends(get_session)):
+    """
+        Used to setup a facility, a building and default config values
+    """
 
     # Creating sample Facility and related Buildings, Sensors, Sensor Values, and Alarms
     default_facility = facility or Facility(beskrivelse="Main Facility")
@@ -24,7 +30,7 @@ def init_setup(facility: Facility, building: Building, session: Session = Depend
     session.commit()
 
     working_hours = WorkingHours(
-        morning = time(08,00),
+        morning = time(8,00),
         evening = time(16,00),
     )
 
