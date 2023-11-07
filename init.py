@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
-from models import Facility, Building, Sensor, Sensor_value,Alarm, SensorType, AlarmType, ThresholdSettings
+from models import Facility, Building, Sensor, Sensor_value,Alarm, SensorType, AlarmType, ThresholdSettings, WorkingHours
 from config import engine
-from datetime import datetime
+from datetime import datetime, time
 
 router = APIRouter()
 
@@ -22,6 +22,15 @@ def init_setup(facility: Facility, building: Building, session: Session = Depend
     default_building = building or Building(name="Building A", facility_id=default_facility.id)
     session.add(default_building)
     session.commit()
+
+    working_hours = WorkingHours(
+        morning = time(08,00),
+        evening = time(16,00),
+    )
+
+    session.add(working_hours)
+    session.commit()
+    session.refresh(working_hours)
 
     default_temp_thresholds = ThresholdSettings(
         sensor_type=SensorType.temperature,

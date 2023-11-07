@@ -1,7 +1,7 @@
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, time
     
 class SensorType(str, Enum):
     temperature = "temperature"
@@ -11,6 +11,12 @@ class AlarmType(str, Enum):
     warning = "warning"
     failure = "failure"
     good = "good"
+
+class WorkingHours(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    morning : Optional[time]
+    evening : Optional[time]
+    created_date : Optional[datetime] = datetime.utcnow().isoformat()
 
 class ThresholdSettings(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import HTMLResponse
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, create_engine, select,SQLModel
-from models import Facility, Building, Sensor, Sensor_value,Alarm ,SensorType ,AlarmType,ThresholdSettings
+from models import Facility, Building, Sensor, Sensor_value,Alarm ,SensorType ,AlarmType,ThresholdSettings, WorkingHours
 from config import engine
 from typing import List
 from datetime import datetime,timedelta, time
@@ -32,9 +32,6 @@ TARGET_BUILDING = 1
 TARGET_FACILITY = 1
 TARGET_NAME = "DT22"
 
-#Working hours
-MORNING = datetime.combine(datetime.now().date(), time(8, 0))
-EVENING = datetime.combine(datetime.now().date(), time(18, 0))
 
 
 
@@ -46,6 +43,7 @@ def get_session():
     """
     with Session(engine) as session:
         yield session
+
 
 #---------------Root------------------------------------------#
 
@@ -109,6 +107,64 @@ def get_taget_name():
     return TARGET_NAME
 
 #----------------------------------------------------------------#
+
+@app.post("/working_hours/", response_model=WorkingHours)
+def create_working_hours(morning_hour: int, morning_minute: int, evening_hour: int, evening_minute: int, session: Session = Depends(get_session)):
+    working_hours = WorkingHours(
+        morning = time(morning_hour,morning_minute),
+        evening = time(evening_hour,evening_minute),
+    )
+
+    session.add(working_hours)
+    session.commit()
+    session.refresh(working_hours)
+    _logger.warning(f"working_hours : {working_hours}")
+    return working_hours
+
+@app.get("/working_hours_all/", response_model=List)
+def get_all_working_configs(session: Session = Depends(get_session)):
+    working_hours = session.exec(select(WorkingHours)).all()
+    return working_hours
+
+
+@app.get("/working_hours/", response_model=dict)
+def get_working_hours(session: Session = Depends(get_session)):
+    working_hours = (
+    session.query(WorkingHours)
+    .order_by(WorkingHours.created_date.desc())
+    .limit(1)
+    .one_or_none())
+    _logger.warning(f"working_hours >>>  {working_hours}")
+
+    if working_hours is None:
+        raise HTTPException(status_code=404, detail="Working Hours not found")
+    now = datetime.now().replace(microsecond=0)
+    return {
+        "now" : now, 
+        "Morning" : working_hours.morning,
+        "Evening" : working_hours.evening,
+        "is_between" : datetime.combine(datetime.now().date(), working_hours.morning)  <= now <= datetime.combine(datetime.now().date(),  working_hours.evening) 
+    }
+
+@app.get("/control_lights", response_model=bool)
+def control_lights(session: Session = Depends(get_session)):
+    working_hours = (
+    session.query(WorkingHours)
+    .order_by(WorkingHours.created_date.desc())
+    .limit(1)
+    .one_or_none())
+    _logger.warning(f"working_hours {working_hours}")
+    if working_hours is None:
+        raise HTTPException(status_code=404, detail="Working Hours not found")
+    now = datetime.now().replace(microsecond=0)
+    return datetime.combine(datetime.now().date(), working_hours.morning)  <= now <= datetime.combine(datetime.now().date(),  working_hours.evening)  
+
+@app.post("/set_working_hours/", response_model=WorkingHours)
+def create_facility(working_hours: WorkingHours, session: Session = Depends(get_session)):
+    session.add(working_hours)
+    session.commit()
+    session.refresh(working_hours)
+    return working_hours
 
 
 @app.post("/facility/", response_model=Facility)
@@ -328,20 +384,3 @@ def get_all_sensor_serial_numbers(session: Session = Depends(get_session)):
     )
 
     return sensors
-
-@app.get("/control_lights", response_model=bool)
-def control_lights():
-    now = datetime.now()
-    is_between = MORNING <= now <= EVENING  # Compare datetime with datetime
-
-    return is_between
-
-@app.post("/update_times/")
-def update_times(morning_hour: int, morning_minute: int, evening_hour: int, evening_minute: int):
-    global MORNING, EVENING
-
-        # Update MORNING and EVENING with new times
-    MORNING = datetime.combine(datetime.now().date(), time(morning_hour, morning_minute))
-    EVENING = datetime.combine(datetime.now().date(), time(evening_hour, evening_minute))
-
-    return {"message": "Times updated successfully"}
