@@ -379,7 +379,7 @@ def get_humid_data(sensor_id: int, session: Session = Depends(get_session)):
 
     # If the value is out of range, create an alarm
     if alarm_triggered:
-        alarm_msg = f"Sensor {sensor.serial_number} reported temperature {value} at {latest_sensor_data.value_datetime}, which is outside of the set thresholds."
+        alarm_msg = f"Sensor {sensor.serial_number} reported humidity {value} at {latest_sensor_data.value_datetime}, which is outside of the set thresholds."
         alarm = Alarm(type=AlarmType.warning, msg=alarm_msg, serial_number=sensor.serial_number)
         session.add(alarm)
         session.commit()
